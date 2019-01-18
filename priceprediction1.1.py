@@ -54,8 +54,11 @@ def mean_absolute_percentage_error(y_true, y_pred): # create MAPE function
 
 
 # load dataset
-dataset = read_csv('../Espana.csv', header=0, index_col=0,na_values=0,keep_default_na=True) #### adjusting NaN values
+dataset = read_csv('../Espana_new.csv', header=0, index_col=0,na_values=0,keep_default_na=True) #### adjusting NaN values
 #Req sub,Reqs baj,Asi sub,Asi baj,Pre req,Enr abs,Enr net,Enr sub,Enr baj,Pre sub,Pre baj,Gen otr,Gen sol,Gen eol,Demanda
+# use Espana.csv for the old case
+
+dataset.dropna(inplace=True)
 
 price24 = dataset['Pre req'].values
 price24 = price24[0:-24]
@@ -63,9 +66,19 @@ dataset = dataset.drop(dataset.index[0:24],axis=0)
 
 dataset.index = pd.to_datetime(dataset.index, utc=True)
 dataset['month'] = dataset.index.month
-dataset['weekday'] = dataset.index.weekday
+#weekday = dataset.index.weekday
+
+weekday = np.array(dataset.index.weekday)
+weekday[weekday < 5] = 0
+weekday[weekday > 4] = 1
+# perhaps make friday a different day 
+
+dataset['weekday'] = weekday
 dataset['hour'] = dataset.index.hour # check type
 dataset['price-24'] = price24
+
+
+print(weekday)
 
 #print(dataset.head(48))     #### make sure to fix the NaN values, DONE
 print(len(dataset))
@@ -87,8 +100,11 @@ print(values.shape)
 #print(values.type)
 print("\n")
 
-X = np.delete(values,4,1)
-y = values[:, 4]
+X = np.delete(values,2,1) # price is 4 in old case
+y = values[:, 2]
+
+# use to merge assigned power into one column
+#X[:,0] = X[:,0] + X[:,1]
 
 print("The full X is: ")
 print(X)
@@ -98,20 +114,26 @@ print(y)
 print(y.shape)
 
 
+
 # choosing variables
-X = X[:,[2,3,11,12,13,16,17]] # 
+# old case
+# X = X[:,[2,3,11,12,13,15,16,17]] # 
+# new case
+X = X[:,[0,1,2,3,4,5,6,7,8]] # use to change variables
 # remeber to add activated power
+
+
 
 # 4 % better to add assigned power 
 
 
-print("Used Columns: ")
-print(list(dataset)[2])#,3,12,13,14,17,18])
-print(list(dataset)[3])
-print(list(dataset)[12])
-print(list(dataset)[13])
-print(list(dataset)[14])
-print(list(dataset)[18])
+#print("Used Columns: ")
+#print(list(dataset)[2])#,3,12,13,14,17,18])
+#print(list(dataset)[3])
+#print(list(dataset)[12])
+#print(list(dataset)[13])
+#print(list(dataset)[14])
+#print(list(dataset)[18])
 #print(list(dataset)[19])
 #data[:, [1, 9]]
 
@@ -134,14 +156,14 @@ data = X
 data['price'] = scaledy
 print('\n')
 #print(data)
-data.dropna(inplace=True)
+#data = data.dropna() #inplace=True)
 
 print("The length of X is: ", len(X))
 print("The shape of X is: ", X.shape)
 #print(y.shape())
 
 ##########################################################################
-n_test_hours = 24 #* 50
+n_test_hours = 24 * 50
 n_train_hours = len(X) - n_test_hours
 ##########################################################################
 
@@ -167,15 +189,15 @@ print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
 
 
 # design network
-epoch = 15 # 10 better than 5
-model = Sequential()
-model.add(LSTM(400, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2])))
+epoch = 1000 # 15 better than 5
+model = Sequential() # fix seed, use different seeds as bootstrap
+model.add(LSTM(200, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2])))
 #model.add(LSTM(200, return_sequences=True))
 #model.add(LSTM(200, return_sequences=True))
 #model.add(LSTM(100, return_sequences=True))
 #model.add(LSTM(100, return_sequences=True))
 #model.add(LSTM(100, return_sequences=True))
-model.add(LSTM(400))#, input_shape=(train_X.shape[1], train_X.shape[2])))
+model.add(LSTM(200))#, input_shape=(train_X.shape[1], train_X.shape[2])))
 model.add(Dense(1))
 model.compile(loss='mae', optimizer='adam')
 
@@ -264,3 +286,31 @@ plt.show()
 # 4 layers 200 neurons gives 25% mape
 # 2 layers 400 neurons gives 26% mape 15% on 24h
 # all (basically) same RMSE
+
+## for new input data: 
+# RMSE much smaller (factor 3) # these are with many NaN-values
+# 2 layers 200 neurons gives 33% mape % on 24h
+# 4 layers 200 neurons gives 32% mape
+# 2 layers 400 neurons gives % mape % on 24h
+
+## for new input data: 
+# RMSE much smaller (factor 3) # these are with many NaN-values
+# 2 layers 200 neurons gives 27% mape 18% on 24h
+# 4 layers 200 neurons gives % mape
+# 2 layers 400 neurons gives % mape % on 24h
+
+############## TO DO LIST #######
+
+# DONE try with forecasted solar, wind and demand 
+# DONE increase dataset
+
+# DONE fix the NaN values (halves the dataset, something wrong?)
+# try to merge assigned and demand and see how it affects accuracy
+# assigned is probably a formula from demand
+    # merging lowers MAPE by 8 percentage points
+
+# increase epoch, neuron and layers
+ 
+# set a seed for the neural network that works good 
+# set a for loop system for running the nn 
+
