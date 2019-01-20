@@ -58,7 +58,9 @@ dataset = read_csv('../Espana_new.csv', header=0, index_col=0,na_values=0,keep_d
 #Req sub,Reqs baj,Asi sub,Asi baj,Pre req,Enr abs,Enr net,Enr sub,Enr baj,Pre sub,Pre baj,Gen otr,Gen sol,Gen eol,Demanda
 # use Espana.csv for the old case
 
+sizelimit = 0#10000 # used to limit the dataset to recent years
 dataset.dropna(inplace=True)
+dataset = dataset.drop(dataset.index[0:sizelimit],axis=0)
 
 price24 = dataset['Pre req'].values
 price24 = price24[0:-24]
@@ -163,7 +165,7 @@ print("The shape of X is: ", X.shape)
 #print(y.shape())
 
 ##########################################################################
-n_test_hours = 24 * 50
+n_test_hours = 24 #* 50
 n_train_hours = len(X) - n_test_hours
 ##########################################################################
 
@@ -189,11 +191,11 @@ print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
 
 
 # design network
-epoch = 1000 # 15 better than 5
+epoch = 25 # 15 better than 5
 model = Sequential() # fix seed, use different seeds as bootstrap
 model.add(LSTM(200, return_sequences=True, input_shape=(train_X.shape[1], train_X.shape[2])))
-#model.add(LSTM(200, return_sequences=True))
-#model.add(LSTM(200, return_sequences=True))
+model.add(LSTM(200, return_sequences=True))
+model.add(LSTM(200, return_sequences=True))
 #model.add(LSTM(100, return_sequences=True))
 #model.add(LSTM(100, return_sequences=True))
 #model.add(LSTM(100, return_sequences=True))
@@ -287,17 +289,17 @@ plt.show()
 # 2 layers 400 neurons gives 26% mape 15% on 24h
 # all (basically) same RMSE
 
-## for new input data: 
+## for new input data, larger dataset: 
 # RMSE much smaller (factor 3) # these are with many NaN-values
-# 2 layers 200 neurons gives 33% mape % on 24h
-# 4 layers 200 neurons gives 32% mape
-# 2 layers 400 neurons gives % mape % on 24h
+# 2 layers 200 neurons gives 33% mape 16% on 24h
+# 4 layers 200 neurons gives 34% mape 17% on 24h
+# 2 layers 400 neurons gives 35% mape 16% on 24h
 
-## for new input data: 
+## for new input data, smaller dataset: 
 # RMSE much smaller (factor 3) # these are with many NaN-values
-# 2 layers 200 neurons gives 27% mape 18% on 24h
-# 4 layers 200 neurons gives % mape
-# 2 layers 400 neurons gives % mape % on 24h
+# 2 layers 200 neurons gives 37% mape % on 24h
+# 4 layers 200 neurons gives 35% mape 
+# 2 layers 400 neurons gives 35% mape % on 24h
 
 ############## TO DO LIST #######
 
@@ -307,7 +309,9 @@ plt.show()
 # DONE fix the NaN values (halves the dataset, something wrong?)
 # try to merge assigned and demand and see how it affects accuracy
 # assigned is probably a formula from demand
-    # merging lowers MAPE by 8 percentage points
+    # merging increases MAPE by 8 percentage points
+
+# add real demand and check if thats the reason for the big change
 
 # increase epoch, neuron and layers
  
